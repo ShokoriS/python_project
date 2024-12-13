@@ -4,7 +4,7 @@ from PyQt5.Qt import Qt
 from PyQt5.QtGui import QIcon, QPixmap
 
 
-class MainWindow(QMainWindow):
+class SignUPWindow(QMainWindow):
     def __init__(self):
         super().__init__()
 
@@ -28,7 +28,7 @@ class MainWindow(QMainWindow):
         self.user_password = QLineEdit(self)
 
         # Submit button
-        self.submit = QPushButton("Submit", self)
+        self.submit_button = QPushButton("Submit", self)
 
         # Toggle button for password visibility
         self.toggle_button = QPushButton("🙈", self)
@@ -72,9 +72,11 @@ class MainWindow(QMainWindow):
             "margin:20px;"
         )
 
+        self.submit_button.clicked.connect(self.submit)
+        
         # Configure the submit button
-        self.submit.setFixedSize(200, 50)
-        self.submit.setStyleSheet(
+        self.submit_button.setFixedSize(200, 50)
+        self.submit_button.setStyleSheet(
             """
             QPushButton {
                 font-size:18px;
@@ -118,7 +120,7 @@ class MainWindow(QMainWindow):
         vbox.addWidget(self.signup, alignment=Qt.AlignCenter)  # Center the label
         vbox.addWidget(self.user_name_email, alignment=Qt.AlignCenter)  # Center username/email input
         vbox.addLayout(password_layout)  # Add the password and toggle button layout
-        vbox.addWidget(self.submit, alignment=Qt.AlignCenter)  # Center submit button
+        vbox.addWidget(self.submit_button, alignment=Qt.AlignCenter)  # Center submit button
         vbox.setAlignment(Qt.AlignCenter)  # Center the entire layout
 
         # Set the layout for the central widget
@@ -133,14 +135,19 @@ class MainWindow(QMainWindow):
             self.toggle_button.setText("🙊")  # Update button icon
         self.password_visible = not self.password_visible  # Toggle the flag
 
+    
+        self.submit()
+
+    def submit(self):
+        user = self.user_name_email.text()
+        password = self.user_password.text()
+
+        
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
-    window = MainWindow()
+    window = SignUPWindow()
     window.show()
     sys.exit(app.exec_())
 
 
-# this is just a test for the commit
-#this is not good
-# will it be good 
