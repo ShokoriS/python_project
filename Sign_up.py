@@ -2,7 +2,31 @@ import sys
 from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QLabel, QVBoxLayout, QLineEdit, QPushButton, QHBoxLayout
 from PyQt5.Qt import Qt
 from PyQt5.QtGui import QIcon, QPixmap
+import pymysql
+from pymysql import Error
+import logging
 
+logging.basicConfig(filename="log_document.txt", level=logging.INFO)
+class DB_Connect_Sign_up:
+
+    def __init__(self, host, user, password, database):
+        self.host = host
+        self.user = user
+        self.password = password
+        self.database = database
+
+    def connect_to_db(self):
+        try:
+            self.connection = pymysql.connect(
+                host=self.host,
+                user=self.user,
+                password=self.password,
+                database=self.database)
+
+            
+            
+        except Error as e:
+            print(f"Connection failed ! because {e}")
 
 class SignUPWindow(QMainWindow):
     def __init__(self):
@@ -34,10 +58,15 @@ class SignUPWindow(QMainWindow):
         self.toggle_button = QPushButton("🙈", self)
         self.password_visible = False
 
+        self.db_connect = DB_Connect_Sign_up("localhost", "Shokori", "max(1,2,3)is3", "task_manger")
+
+        self.show_checking = QLabel("", self)
+
         # Set up the interface
         self.init_ui()
 
     def init_ui(self):
+        self.db_connect.connect_to_db()
         # Configure the username, email line edit
         self.user_name_email.setPlaceholderText("Username or Email address")
         self.user_name_email.setFixedSize(400, 50)
@@ -109,20 +138,27 @@ class SignUPWindow(QMainWindow):
             """
         )
 
+        self.show_checking.setStyleSheet( 
+            "color:white;"
+            "font-family:Arial;"
+            "font-size:30px;"
+            "margin:50px;")
+
         # Create a horizontal layout for the password field and the toggle button
         password_layout = QHBoxLayout()
         password_layout.addWidget(self.user_password, alignment=Qt.AlignCenter)
         password_layout.addWidget(self.toggle_button, alignment=Qt.AlignRight)
         password_layout.setAlignment(Qt.AlignCenter)  # Center the layout
-
+ 
         # Add the horizontal layout for the password field into the main layout
         vbox = QVBoxLayout()
         vbox.addWidget(self.signup, alignment=Qt.AlignCenter)  # Center the label
         vbox.addWidget(self.user_name_email, alignment=Qt.AlignCenter)  # Center username/email input
         vbox.addLayout(password_layout)  # Add the password and toggle button layout
         vbox.addWidget(self.submit_button, alignment=Qt.AlignCenter)  # Center submit button
+        vbox.addWidget(self.show_checking, alignment=Qt.AlignCenter)
         vbox.setAlignment(Qt.AlignCenter)  # Center the entire layout
-
+        
         # Set the layout for the central widget
         self.central_widget.setLayout(vbox)
 
@@ -139,10 +175,23 @@ class SignUPWindow(QMainWindow):
         self.submit()
 
     def submit(self):
+
+        cursor = self.db_connect.connection.cursor()
         user = self.user_name_email.text()
         password = self.user_password.text()
+        print(f"hello {user}, your password is {password}")
+        sql_command = "insert into user(username_email, password) values(%s, %s)"
+        cursor.execute(sql_command, (user, password))
+        self.db_connect.connection.commit()
 
-        
+    def checking(self):
+        self.show_checking.setText("Loading")
+        for i in range(10):
+            yield "."
+
+        # I can use the timer to update the (.) dots
+
+
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
