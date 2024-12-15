@@ -1,15 +1,21 @@
-import sys
-from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QLabel, QVBoxLayout, QLineEdit, QPushButton, QHBoxLayout
-from PyQt5.Qt import Qt
-from PyQt5.QtGui import QIcon, QPixmap
-import pymysql
-from pymysql import Error
-import logging
-
+try:
+    import sys
+    from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QLabel, QVBoxLayout, QLineEdit, QPushButton, QHBoxLayout
+    from PyQt5.Qt import Qt
+    from PyQt5.QtGui import QIcon, QPixmap
+    from PyQt5.QtCore import QTimer
+    import pymysql
+    from pymysql import Error
+    import logging
+except ModuleNotFoundError as mr:
+    logging.info(mr)
 logging.basicConfig(filename="log_document.txt", level=logging.INFO)
+
+
 class DB_Connect_Sign_up:
 
     def __init__(self, host, user, password, database):
+        self.connection = None
         self.host = host
         self.user = user
         self.password = password
@@ -23,10 +29,9 @@ class DB_Connect_Sign_up:
                 password=self.password,
                 database=self.database)
 
-            
-            
         except Error as e:
             print(f"Connection failed ! because {e}")
+
 
 class SignUPWindow(QMainWindow):
     def __init__(self):
@@ -60,7 +65,9 @@ class SignUPWindow(QMainWindow):
 
         self.db_connect = DB_Connect_Sign_up("localhost", "Shokori", "max(1,2,3)is3", "task_manger")
 
-        self.show_checking = QLabel("", self)
+        self.loading = QLabel("", self)
+        self.timer = QTimer(self)
+        self.dot = ""
 
         # Set up the interface
         self.init_ui()
@@ -138,10 +145,10 @@ class SignUPWindow(QMainWindow):
             """
         )
 
-        self.show_checking.setStyleSheet( 
+        self.loading.setStyleSheet(
             "color:white;"
             "font-family:Arial;"
-            "font-size:30px;"
+            "font-size:20px;"
             "margin:50px;")
 
         # Create a horizontal layout for the password field and the toggle button
@@ -156,7 +163,7 @@ class SignUPWindow(QMainWindow):
         vbox.addWidget(self.user_name_email, alignment=Qt.AlignCenter)  # Center username/email input
         vbox.addLayout(password_layout)  # Add the password and toggle button layout
         vbox.addWidget(self.submit_button, alignment=Qt.AlignCenter)  # Center submit button
-        vbox.addWidget(self.show_checking, alignment=Qt.AlignCenter)
+        vbox.addWidget(self.loading, alignment=Qt.AlignCenter)
         vbox.setAlignment(Qt.AlignCenter)  # Center the entire layout
         
         # Set the layout for the central widget
@@ -171,32 +178,69 @@ class SignUPWindow(QMainWindow):
             self.toggle_button.setText("🙊")  # Update button icon
         self.password_visible = not self.password_visible  # Toggle the flag
 
-    
-        self.submit()
-
     def submit(self):
-
         cursor = self.db_connect.connection.cursor()
-        user = self.user_name_email.text()
-        password = self.user_password.text()
-        print(f"hello {user}, your password is {password}")
-        sql_command = "insert into user(username_email, password) values(%s, %s)"
+        user = self.user_name_email.text().strip()
+        password = self.user_password.text().strip()
+
+        if user == password:
+            self.user_name_email.clear()
+            self.user_password.clear()
+            self.user_name_email.setPlaceholderText("Username and password can't be the same!")
+            return
+
+        if len(password) < 4:
+            self.user_password.clear()
+            self.user_password.setPlaceholderText("Please enter more than 4 characters")
+            return
+
+        # Check if username already exists
+        identical_user = "SELECT username_email FROM user WHERE username_email = %s;"
+        cursor.execute(identical_user, (user,))
+        result = cursor.fetchone()
+
+        if result or user.isdigit():
+            self.user_name_email.clear()
+            self.user_name_email.setPlaceholderText("Please enter another username!")
+            return
+
+        if not user or not password:  # Check if fields are empty
+            self.user_name_email.setPlaceholderText("Please fill out this form > Username")
+            self.user_password.setPlaceholderText("Please fill out this form > Email")
+            return
+
+        # Insert the user into the database
+        sql_command = "INSERT INTO user(username_email, password) VALUES (%s, %s);"
         cursor.execute(sql_command, (user, password))
         self.db_connect.connection.commit()
 
-    def checking(self):
-        self.show_checking.setText("Loading")
-        for i in range(10):
-            yield "."
+        # Start the timer for loading animation
+        self.timer.timeout.connect(self.update)
+        self.timer.start(700)
 
-        # I can use the timer to update the (.) dots
+    # I can use the timer to update the (.) dot
+    def update(self):
+        self.dot += "."
+        self.loading.setText(f"Loading{self.dot}")
+        if len(self.dot) >= 6:
+            self.timer.stop()
+            self.loading.setText("Done!")
 
 
-
-if __name__ == "__main__":
+def main():
     app = QApplication(sys.argv)
     window = SignUPWindow()
     window.show()
     sys.exit(app.exec_())
+try:
+    main()
 
+except ModuleNotFoundError as em:
+    logging.info(em)
+
+except Exception as e:
+    logging.info(e)
+
+except Error as er:
+    logging.info(er)
 
