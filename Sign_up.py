@@ -183,6 +183,11 @@ class SignUPWindow(QMainWindow):
         user = self.user_name_email.text().strip()
         password = self.user_password.text().strip()
 
+        if not user or not password:  # Check if fields are empty
+            self.user_name_email.setPlaceholderText("Please fill out this form > Username")
+            self.user_password.setPlaceholderText("Please fill out this form > Password")
+            return
+
         if user == password:
             self.user_name_email.clear()
             self.user_password.clear()
@@ -204,10 +209,7 @@ class SignUPWindow(QMainWindow):
             self.user_name_email.setPlaceholderText("Please enter another username!")
             return
 
-        if not user or not password:  # Check if fields are empty
-            self.user_name_email.setPlaceholderText("Please fill out this form > Username")
-            self.user_password.setPlaceholderText("Please fill out this form > Email")
-            return
+
 
         # Insert the user into the database
         sql_command = "INSERT INTO user(username_email, password) VALUES (%s, %s);"
@@ -232,6 +234,8 @@ def main():
     window = SignUPWindow()
     window.show()
     sys.exit(app.exec_())
+
+
 try:
     main()
 
